@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="cs" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ceník | Vision360 – Profesionální 3D prohlídky</title>
+    <meta name="description"
+        content="Transparentní ceny pro 3D virtuální prohlídky nemovitostí. Vyberte si z našich balíčků nebo využijte naši inteligentní kalkulačku.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Rajdhani', 'monospace'],
+                    },
+                    colors: {
+                        black: '#050505',
+                        glass: 'rgba(255,255,255,0.03)',
+                        glassBorder: 'rgba(255,255,255,0.08)',
+                    },
+                    animation: {
+                        'grid-flow': 'gridFlow 20s linear infinite',
+                        'pulse-glow': 'pulseGlow 3s infinite',
+                    },
+                    keyframes: {
+                        gridFlow: {
+                            '0%': { transform: 'perspective(500px) rotateX(60deg) translateY(0)' },
+                            '100%': { transform: 'perspective(500px) rotateX(60deg) translateY(50px)' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '0.1' },
+                            '50%': { opacity: '0.3' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #050505;
+            color: #ffffff;
+        }
+
+        /* Global Noise Texture */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* 3D Grid Floor */
+        .grid-floor {
+            position: fixed;
+            bottom: -50%;
+            left: -50%;
+            width: 200%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: perspective(500px) rotateX(60deg);
+            animation: gridFlow 10s linear infinite;
+            mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 80%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Tech Corners */
+        .corner-bracket {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .corner-tl {
+            top: 0;
+            left: 0;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .corner-tr {
+            top: 0;
+            right: 0;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .corner-bl {
+            bottom: 0;
+            left: 0;
+            border-right: none;
+            border-top: none;
+        }
+
+        .corner-br {
+            bottom: 0;
+            right: 0;
+            border-left: none;
+            border-top: none;
+        }
+
+        .group:hover .corner-bracket {
+            width: 15px;
+            height: 15px;
+            border-color: #a5b4fc;
+        }
+
+        .text-gradient {
+            background: linear-gradient(to right, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Input Range Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid #6366f1;
+            cursor: pointer;
+            margin-top: 0px;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #000;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        /* Insane Touch: Aura & Scanline */
+        #cursor-aura {
+            background: radial-gradient(800px circle at var(--x, 50%) var(--y, 50%), rgba(99, 102, 241, 0.12), transparent 80%);
+            z-index: 1;
+        }
+
+        /* Logo Core Pulse & Tech Ring */
+        @keyframes orbit {
+            from {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+
+            to {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.3;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+        }
+
+        .logo-core {
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 140%;
+            height: 140%;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-top-color: rgba(99, 102, 241, 0.8);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: orbit 4s linear infinite;
+            pointer-events: none;
+        }
+
+        .logo-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%);
+            transform: translate(-50%, -50%);
+            filter: blur(15px);
+            z-index: -1;
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        /* Smooth Magnetic Transition (only for reset) */
+        .magnetic-wrap {
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        /* Magnet Active State (no transition for immediate follow) */
+        .magnetic-active {
+            transition: none !important;
+        }
+    </style>
+</head>
+
+<body class="antialiased selection:bg-indigo-500 selection:text-white overflow-x-hidden">
+
+    <!-- Global Noise & HUD Elements -->
+    <div class="noise-overlay"></div>
+    <div id="cursor-aura"
+        class="fixed inset-0 pointer-events-none opacity-0 md:opacity-100 transition-opacity duration-1000"></div>
+    <div class="grid-floor"></div>
+
+    <!-- Navigation -->
+    <nav
+        class="fixed w-full z-50 px-6 py-6 transition-all duration-300 backdrop-blur-md bg-black/60 border-b border-white/5">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-6">
+                <a href="index.html" class="relative block group/logo">
+                    <div class="logo-glow"></div>
+                    <div class="logo-ring opacity-0 group-hover/logo:opacity-100 transition-opacity duration-700"></div>
+                    <div class="logo-ring w-[120%] h-[120%] border-dashed opacity-0 group-hover/logo:opacity-50 transition-opacity duration-700"
+                        style="animation-direction: reverse; animation-duration: 6s;"></div>
+                    <img src="v360_logo.png" alt="Vision 360"
+                        class="h-16 w-auto relative z-10 hover:scale-105 transition-transform duration-500">
+                </a>
+                <div class="h-8 w-px bg-white/40 hidden sm:block"></div>
+                <img src="ja_czech_logo.png" alt="JA Czech"
+                    class="h-8 w-auto invert brightness-0 opacity-70 hidden sm:block">
+            </div>
+            <div class="hidden md:flex gap-8 text-sm font-bold tracking-widest text-gray-300 uppercase font-mono">
+                <a href="index.html#about" class="hover:text-white transition-colors">O NÁS</a>
+                <a href="index.html#services" class="hover:text-white transition-colors">SLUŽBY</a>
+                <a href="index.html#team" class="hover:text-white transition-colors">TÝM</a>
+                <a href="#" class="text-white border-b border-white pb-0.5">CENÍK</a>
+            </div>
+            <button id="burger-btn"
+                class="md:hidden text-white text-2xl p-2 hover:bg-white/10 rounded-lg transition-colors">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu"
+        class="fixed inset-0 z-[60] bg-black/95 backdrop-blur-xl translate-x-full transition-transform duration-500 md:hidden">
+        <div class="flex flex-col h-full p-10">
+            <div class="flex justify-between items-center mb-16 px-2">
+                <div class="relative">
+                    <div class="logo-glow opacity-100"></div>
+                    <img src="v360_logo.png" alt="Vision 360" class="h-12 w-auto relative z-10">
+                </div>
+                <button id="close-menu" class="text-white text-3xl p-2">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="flex flex-col gap-8 text-2xl font-bold tracking-widest text-gray-300 uppercase font-mono">
+                <a href="index.html#about" class="mobile-link hover:text-indigo-500 transition-colors">O NÁS</a>
+                <a href="index.html#services" class="mobile-link hover:text-indigo-500 transition-colors">SLUŽBY</a>
+                <a href="index.html#team" class="mobile-link hover:text-indigo-500 transition-colors">TÝM</a>
+                <a href="#" class="mobile-link text-white border-b border-white inline-block w-fit">CENÍK</a>
+                <a href="https://youtu.be/1Brxhtn7maU" target="_blank"
+                    class="mobile-link text-red-500 hover:text-red-400 transition-colors flex items-center gap-4">
+                    <i class="fab fa-youtube"></i> VIDEO
+                </a>
+            </div>
+            <div class="mt-auto border-t border-white/10 pt-10">
+                <p class="text-xs font-mono text-gray-500 tracking-[0.2em] uppercase mb-4">Kontaktujte nás</p>
+                <a href="tel:+420732482155" class="text-xl font-bold text-white block mb-2 font-mono">+420 732 482
+                    155</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="relative z-10 pt-40 pb-20">
+
+        <!-- Header -->
+        <div class="text-center px-6 mb-20 relative">
+            <!-- Ambient Light -->
+            <div
+                class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none">
+            </div>
+
+            <div
+                class="inline-block mb-4 px-3 py-1 border border-indigo-500/30 rounded-full bg-indigo-500/10 backdrop-blur-md">
+                <span class="text-[10px] font-mono tracking-[0.2em] text-indigo-400 uppercase">/// Transparentní
+                    ceny</span>
+            </div>
+            <h1 class="text-5xl md:text-7xl font-black tracking-tighter mb-6 text-gradient">
+                INVESTICE DO<br>BUDOUCNOSTI
+            </h1>
+            <p class="text-gray-400 max-w-xl mx-auto font-light text-lg">
+                Žádné skryté poplatky. Vyberte si balíček, který odpovídá velikosti vašeho prostoru, nebo si nechte
+                spočítat cenu na míru.
+            </p>
+        </div>
+
+        <!-- Pricing Grid -->
+        <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-3 gap-8 mb-32">
+
+            <!-- Standard -->
+            <div
+                class="group relative bg-glass border border-glassBorder p-8 rounded-lg hover:border-white/20 transition-all duration-300 hover:-translate-y-2 flex flex-col items-center text-center">
+                <div class="corner-bracket corner-tl"></div>
+                <div class="corner-bracket corner-br"></div>
+
+                <h3 class="text-xs font-bold tracking-[0.2em] text-gray-500 uppercase font-mono mb-4">STANDARD 40</h3>
+                <div class="text-4xl font-bold text-white mb-2">1 970 Kč</div>
+                <div class="text-sm text-gray-400 mb-8 pb-8 w-full border-b border-white/5">Pro malé prostory do 40 m²
+                </div>
+
+                <div class="flex-grow"></div>
+
+                <a href="index.html?contact=highlight#team"
+                    class="block w-full text-center py-4 border border-white/20 rounded hover:bg-white hover:text-black transition-all font-mono text-xs uppercase tracking-widest font-bold">
+                    OBJEDNAT
+                </a>
+            </div>
+
+            <!-- Business -->
+            <div
+                class="group relative bg-glass border border-glassBorder p-8 rounded-lg hover:border-white/20 transition-all duration-300 hover:-translate-y-2 flex flex-col items-center text-center">
+                <div class="corner-bracket corner-tl"></div>
+                <div class="corner-bracket corner-br"></div>
+
+                <h3 class="text-xs font-bold tracking-[0.2em] text-gray-500 uppercase font-mono mb-4">BUSINESS 100</h3>
+                <div class="text-4xl font-bold text-white mb-2">3 270 Kč</div>
+                <div class="text-sm text-gray-400 mb-8 pb-8 w-full border-b border-white/5">Střední prostory do 100 m²
+                </div>
+
+                <div class="flex-grow"></div>
+
+                <a href="index.html?contact=highlight#team"
+                    class="block w-full text-center py-4 border border-white/20 rounded hover:bg-white hover:text-black transition-all font-mono text-xs uppercase tracking-widest font-bold">
+                    OBJEDNAT
+                </a>
+            </div>
+
+            <!-- Premium -->
+            <div
+                class="group relative bg-glass border border-glassBorder p-8 rounded-lg hover:border-white/20 transition-all duration-300 hover:-translate-y-2 flex flex-col items-center text-center">
+                <div class="corner-bracket corner-tl"></div>
+                <div class="corner-bracket corner-br"></div>
+
+                <h3 class="text-xs font-bold tracking-[0.2em] text-gray-500 uppercase font-mono mb-4">PREMIUM 250</h3>
+                <div class="text-4xl font-bold text-white mb-2">4 270 Kč</div>
+                <div class="text-sm text-gray-400 mb-8 pb-8 w-full border-b border-white/5">Velké prostory do 250 m²
+                </div>
+
+                <div class="flex-grow"></div>
+
+                <a href="index.html?contact=highlight#team"
+                    class="block w-full text-center py-4 border border-white/20 rounded hover:bg-white hover:text-black transition-all font-mono text-xs uppercase tracking-widest font-bold">
+                    OBJEDNAT
+                </a>
+            </div>
+        </div>
+
+        <!-- Calculator Section -->
+        <div class="max-w-4xl mx-auto px-6 mb-32">
+            <div
+                class="bg-glass border border-white/10 p-8 md:p-12 rounded-2xl relative overflow-hidden backdrop-blur-xl">
+                <!-- Background Grid inside calc -->
+                <div class="absolute inset-0 opacity-10"
+                    style="background-image: radial-gradient(#6366f1 1px, transparent 1px); background-size: 20px 20px;">
+                </div>
+
+                <div class="relative z-10 flex flex-col-reverse md:flex-row gap-12 items-center">
+                    <div class="w-full md:w-1/2">
+                        <h2 class="text-2xl font-bold mb-2">Chytrá Kalkulačka</h2>
+                        <p class="text-gray-400 text-sm mb-8">Zadejte výměru vaší nemovitosti pro okamžitý odhad ceny.
+                        </p>
+
+                        <!-- Area Slider -->
+                        <div
+                            class="mb-6 p-5 border border-indigo-500/30 bg-indigo-500/5 rounded-lg relative overflow-hidden group hover:border-indigo-500/50 transition-colors">
+                            <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500/50"></div>
+                            <div
+                                class="flex justify-between text-xs font-mono text-gray-400 mb-4 uppercase tracking-widest">
+                                <span class="group-hover:text-indigo-400 transition-colors"><i
+                                        class="fas fa-ruler-combined mr-2"></i>Plocha (m²)</span>
+                                <span id="areaLabel"
+                                    class="text-white font-bold bg-black/50 px-2 py-0.5 rounded border border-white/10">40
+                                    m²</span>
+                            </div>
+                            <!-- Custom Track Wrapper -->
+                            <div class="relative w-full h-6 flex items-center">
+                                <!-- The Visual Line -->
+                                <div
+                                    class="absolute w-full h-[2px] bg-white/50 shadow-[0_0_10px_rgba(255,255,255,0.3)] rounded-full">
+                                </div>
+                                <!-- The Actual Input -->
+                                <input type="range" id="areaInput" min="10" max="500" value="40" step="10"
+                                    class="w-full absolute inset-0 z-10 opacity-100 cursor-pointer appearance-none bg-transparent">
+                            </div>
+                        </div>
+
+                        <!-- Hosting Slider -->
+                        <div
+                            class="mb-6 p-5 border border-indigo-500/30 bg-indigo-500/5 rounded-lg relative overflow-hidden group hover:border-indigo-500/50 transition-colors">
+                            <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500/50"></div>
+                            <div
+                                class="flex justify-between text-xs font-mono text-gray-400 mb-4 uppercase tracking-widest">
+                                <span class="group-hover:text-indigo-400 transition-colors"><i
+                                        class="fas fa-clock mr-2"></i>Délka hostingu</span>
+                                <span id="hostingLabel"
+                                    class="text-white font-bold bg-black/50 px-2 py-0.5 rounded border border-white/10">0
+                                    měsíců</span>
+                            </div>
+                            <!-- Custom Track Wrapper -->
+                            <div class="relative w-full h-6 flex items-center">
+                                <!-- The Visual Line -->
+                                <div
+                                    class="absolute w-full h-[2px] bg-white/50 shadow-[0_0_10px_rgba(255,255,255,0.3)] rounded-full">
+                                </div>
+                                <!-- The Actual Input -->
+                                <input type="range" id="hostingInput" min="0" max="24" value="0" step="1"
+                                    class="w-full absolute inset-0 z-10 opacity-100 cursor-pointer appearance-none bg-transparent">
+                            </div>
+                        </div>
+
+                        <!-- Travel Logistics Toggle -->
+                        <div
+                            class="mb-6 flex items-center justify-between p-4 border border-white/5 bg-white/[0.02] rounded-lg">
+                            <span class="text-xs font-mono text-gray-400 uppercase tracking-widest">Místo realizace mimo
+                                Ostravu?</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="travelToggle" class="sr-only peer">
+                                <div
+                                    class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Distance Slider (Hidden by default) -->
+                        <div id="distanceContainer"
+                            class="mb-8 p-5 border border-indigo-500/30 bg-indigo-500/5 rounded-lg relative overflow-hidden transition-all duration-500 max-h-0 opacity-0 pointer-events-none scale-95 origin-top">
+                            <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500/50"></div>
+                            <div
+                                class="flex justify-between text-xs font-mono text-gray-400 mb-4 uppercase tracking-widest">
+                                <span class="text-indigo-400"><i class="fas fa-car mr-2"></i>Vzdálenost (km)</span>
+                                <span id="distanceLabel"
+                                    class="text-white font-bold bg-black/50 px-2 py-0.5 rounded border border-white/10">0
+                                    km</span>
+                            </div>
+                            <!-- Custom Track Wrapper -->
+                            <div class="relative w-full h-6 flex items-center">
+                                <div
+                                    class="absolute w-full h-[2px] bg-white/50 shadow-[0_0_10px_rgba(255,255,255,0.3)] rounded-full">
+                                </div>
+                                <input type="range" id="distanceInput" min="0" max="200" value="0" step="5"
+                                    class="w-full absolute inset-0 z-10 opacity-100 cursor-pointer appearance-none bg-transparent">
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <label
+                                    class="text-[10px] text-gray-500 font-mono uppercase tracking-widest block mb-1">Plocha</label>
+                                <input type="number" id="areaNumberInput" value="40"
+                                    class="bg-black/50 border border-white/10 rounded px-4 py-3 text-white w-full font-mono focus:border-indigo-500 outline-none transition-colors"
+                                    placeholder="m²">
+                            </div>
+                            <div class="w-1/2">
+                                <label
+                                    class="text-[10px] text-gray-500 font-mono uppercase tracking-widest block mb-1">Hosting</label>
+                                <input type="number" id="hostingNumberInput" value="0"
+                                    class="bg-black/50 border border-white/10 rounded px-4 py-3 text-white w-full font-mono focus:border-indigo-500 outline-none transition-colors"
+                                    placeholder="měsíců">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="w-full md:w-1/2 text-center md:text-right border-b md:border-b-0 md:border-t-0 md:border-l border-white/10 pb-8 md:pb-0 md:pl-12 sticky top-20 md:relative bg-black/40 md:bg-transparent backdrop-blur-md md:backdrop-blur-none z-20 pt-4 md:pt-0">
+                        <div id="priceBadge"
+                            class="inline-block text-[9px] font-bold tracking-[0.2em] bg-indigo-500 text-white px-3 py-1 rounded-sm mb-4 uppercase animate-pulse">
+                            SMART START</div>
+                        <div id="priceDisplay" class="text-5xl md:text-6xl font-black text-white mb-2 tracking-tighter">
+                            1 970 Kč</div>
+                        <div id="priceMessage"
+                            class="text-[11px] text-gray-400 font-medium mb-6 uppercase tracking-wider h-4">Investice,
+                            která se vrátí.</div>
+                        <a href="index.html?contact=highlight#team"
+                            class="magnetic-btn inline-flex items-center gap-3 bg-indigo-600 hover:bg-indigo-500 text-white transition-all duration-300 py-4 px-10 rounded text-sm font-bold uppercase tracking-widest hover:scale-105 shadow-[0_0_20px_rgba(79,70,229,0.3)]">
+                            Mám zájem <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/10 bg-black py-12">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex flex-col">
+                <div class="text-2xl font-black tracking-tighter text-gray-700">VISION360</div>
+                <div class="text-[9px] font-mono text-gray-600 tracking-widest uppercase mt-1">Dostupní každý den: 8:00
+                    – 19:00</div>
+            </div>
+            <div class="flex items-center gap-4 opacity-60 hover:opacity-100 transition-opacity">
+                <div class="text-xs text-gray-500 font-mono flex flex-col text-right">
+                    <span>© 2025 Vision 360</span>
+                    <span class="text-[10px]">Ve spolupráci s</span>
+                </div>
+                <img src="ja_czech_logo.png" alt="JA Czech Logo" class="h-8 w-auto invert brightness-0">
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Calculator Logic
+        const areaInput = document.getElementById('areaInput');
+        const areaNumberInput = document.getElementById('areaNumberInput');
+        const areaLabel = document.getElementById('areaLabel');
+
+        const hostingInput = document.getElementById('hostingInput');
+        const hostingNumberInput = document.getElementById('hostingNumberInput');
+        const hostingLabel = document.getElementById('hostingLabel');
+
+        const priceDisplay = document.getElementById('priceDisplay');
+        const priceBadge = document.getElementById('priceBadge');
+        const priceMessage = document.getElementById('priceMessage');
+
+        function calculatePrice(area, months, distance) {
+            let price = 0;
+
+            // Base Price (Area)
+            if (area <= 40) {
+                price = 1970;
+            } else if (area <= 100) {
+                price = 1970 + (area - 40) * ((3270 - 1970) / (100 - 40));
+            } else if (area <= 250) {
+                price = 3270 + (area - 100) * ((4270 - 3270) / (250 - 100));
+            } else {
+                price = 4270 + (area - 250) * 10;
+            }
+
+            // Hosting Price: First 3 months = 150/mo, then 200/mo
+            let hostingPrice = 0;
+            if (months > 0) {
+                const firstTierMonths = Math.min(months, 3);
+                const secondTierMonths = Math.max(0, months - 3);
+                hostingPrice = (firstTierMonths * 150) + (secondTierMonths * 200);
+            }
+
+            // Travel Price: 5 CZK per km
+            const travelPrice = distance * 5;
+
+            return Math.round(price + hostingPrice + travelPrice);
+        }
+
+        function updateUI() {
+            const area = parseFloat(areaInput.value) || 0;
+            const months = parseFloat(hostingInput.value) || 0;
+            const travelEnabled = travelToggle.checked;
+            const distance = travelEnabled ? parseFloat(distanceInput.value) : 0;
+
+            const price = calculatePrice(area, months, distance);
+
+            areaLabel.innerText = `${area} m²`;
+            hostingLabel.innerText = `${months} měsíců`;
+            distanceLabel.innerText = `${distance} km`;
+
+            // Toggle Distance UI
+            if (travelEnabled) {
+                distanceContainer.style.maxHeight = "200px";
+                distanceContainer.style.opacity = "1";
+                distanceContainer.style.pointerEvents = "auto";
+                distanceContainer.style.scale = "1";
+                distanceContainer.style.marginBottom = "2rem";
+            } else {
+                distanceContainer.style.maxHeight = "0";
+                distanceContainer.style.opacity = "0";
+                distanceContainer.style.pointerEvents = "none";
+                distanceContainer.style.scale = "0.95";
+                distanceContainer.style.marginBottom = "0";
+            }
+            priceDisplay.innerText = `${price.toLocaleString()} Kč`;
+
+            // Dynamic Color Logic (White -> Green)
+            const minPrice = 1970;
+            const maxPrice = 11500;
+            let percent = (price - minPrice) / (maxPrice - minPrice);
+            if (percent > 1) percent = 1;
+            if (percent < 0) percent = 0;
+
+            // Interpolate Hue (Optional, or just mix colors)
+            // Let's mix White (RGB 255,255,255) to Green (RGB 74, 222, 128) -> #4ade80
+            const r = Math.round(255 + (74 - 255) * percent);
+            const g = Math.round(255 + (222 - 255) * percent);
+            const b = Math.round(255 + (128 - 255) * percent);
+
+            const color = `rgb(${r}, ${g}, ${b})`;
+
+            // Dynamic Glow & Scale
+            const blur = Math.round(5 + (20 * percent));
+            const opacity = 0.2 + (0.6 * percent);
+            const scale = 1 + (0.25 * percent); // Scales from 1x to 1.25x
+
+            priceDisplay.style.color = color;
+            priceDisplay.style.textShadow = `0 0 ${blur}px rgba(74, 222, 128, ${opacity})`;
+            priceDisplay.style.transform = `scale(${scale})`;
+            priceDisplay.style.transition = "color 0.1s, text-shadow 0.1s, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+
+            // --- PSYCHOLOGICAL TRIGGERS (Refocused on Scale, not Quality) ---
+
+            // 1. Badge Updates
+            if (percent < 0.1) {
+                priceBadge.innerText = "EFEKTIVNÍ SKEN";
+                priceBadge.className = "inline-block text-[9px] font-bold tracking-[0.2em] bg-gray-600 text-white px-3 py-1 rounded-sm mb-4 uppercase";
+                priceMessage.innerText = "Precizní 8K kvalita pro menší prostory.";
+            } else if (percent < 0.4) {
+                priceBadge.innerText = "STANDARDNÍ ROZSAH";
+                priceBadge.className = "inline-block text-[9px] font-bold tracking-[0.2em] bg-indigo-600 text-white px-3 py-1 rounded-sm mb-4 uppercase animate-bounce";
+                priceMessage.innerText = "Kompletní 3D dokumentace vaší nemovitosti.";
+            } else if (percent < 0.7) {
+                priceBadge.innerText = "VELKOPLOŠNÁ REALIZACE";
+                priceBadge.className = "inline-block text-[9px] font-bold tracking-[0.2em] bg-blue-600 text-white px-3 py-1 rounded-sm mb-4 uppercase";
+                priceMessage.innerText = "Detailní digitalizace rozsáhlých objektů.";
+            } else {
+                priceBadge.innerText = "KOMPLEXNÍ PROJEKT";
+                priceBadge.className = "inline-block text-[9px] font-bold tracking-[0.2em] bg-white text-black px-3 py-1 rounded-sm mb-4 uppercase shadow-[0_0_15px_rgba(255,255,255,0.5)]";
+                priceMessage.innerText = "Špičková technologie aplikovaná na velký celek.";
+            }
+
+            // 2. Savings/Benefit Injection
+            if (area > 200) {
+                priceMessage.innerHTML = `<span class="text-indigo-400">Prémiová sleva na velkou plochu započtena!</span>`;
+            }
+        }
+
+        // Area Listeners
+        areaInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            areaNumberInput.value = val;
+            updateUI();
+        });
+        areaNumberInput.addEventListener('input', (e) => {
+            let val = parseFloat(e.target.value);
+            if (val > 500) val = 500;
+            areaInput.value = val;
+            updateUI();
+        });
+
+        const travelToggle = document.getElementById('travelToggle');
+        const distanceInput = document.getElementById('distanceInput');
+        const distanceLabel = document.getElementById('distanceLabel');
+        const distanceContainer = document.getElementById('distanceContainer');
+
+        travelToggle.addEventListener('change', updateUI);
+        distanceInput.addEventListener('input', updateUI);
+
+        // Hosting Listeners
+        hostingInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            hostingNumberInput.value = val;
+            updateUI();
+        });
+        hostingNumberInput.addEventListener('input', (e) => {
+            let val = parseFloat(e.target.value);
+            if (val > 240) val = 240; // Max cap logical
+            hostingInput.value = val > 24 ? 24 : val; // Slider cap
+            updateUI();
+        });
+
+        // Initial calc
+        updateUI();
+
+        // Mobile Menu Logic
+        const burgerBtn = document.getElementById('burger-btn');
+        const closeMenuBtn = document.getElementById('close-menu');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileLinks = document.querySelectorAll('.mobile-link');
+
+        function toggleMenu() {
+            mobileMenu.classList.toggle('translate-x-full');
+            document.body.classList.toggle('overflow-hidden');
+        }
+
+        if (burgerBtn && closeMenuBtn && mobileMenu) {
+            burgerBtn.addEventListener('click', toggleMenu);
+            closeMenuBtn.addEventListener('click', toggleMenu);
+            mobileLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('translate-x-full');
+                    document.body.classList.remove('overflow-hidden');
+                });
+            });
+        }
+
+        // --- INSANE TOUCH: Interaction Logic ---
+
+        // 1. Aura Follow Logic
+        const aura = document.getElementById('cursor-aura');
+        if (aura) {
+            window.addEventListener('mousemove', (e) => {
+                aura.style.setProperty('--x', e.clientX + 'px');
+                aura.style.setProperty('--y', e.clientY + 'px');
+            });
+
+            // For Mobile: Pulse effect on scroll
+            window.addEventListener('scroll', () => {
+                if (window.innerWidth < 768) {
+                    aura.style.opacity = '0.4';
+                    setTimeout(() => aura.style.opacity = '0', 1000);
+                }
+            }, { passive: true });
+        }
+
+        // 2. Magnetic Buttons Improved
+        const magneticButtons = document.querySelectorAll('nav a, footer a, button:not(#burger-btn), .magnetic-btn');
+        magneticButtons.forEach(btn => {
+            btn.classList.add('magnetic-wrap');
+
+            btn.addEventListener('mousemove', (e) => {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+
+                btn.classList.add('magnetic-active');
+                // Pull button slightly towards mouse
+                btn.style.transform = `translate(${x * 0.15}px, ${y * 0.15}px)`;
+            });
+
+            btn.addEventListener('mouseleave', () => {
+                btn.classList.remove('magnetic-active');
+                btn.style.transform = '';
+            });
+        });
+
+        // 3. Slider Magnetic Touch (Mobile Focus)
+        const sliders = document.querySelectorAll('input[type="range"]');
+        sliders.forEach(slider => {
+            const handleTouch = (e) => {
+                if (window.innerWidth < 1024) {
+                    const touch = e.touches[0];
+                    const rect = slider.getBoundingClientRect();
+
+                    // Move Aura to touch point
+                    if (aura) {
+                        aura.style.setProperty('--x', touch.clientX + 'px');
+                        aura.style.setProperty('--y', touch.clientY + 'px');
+                        aura.style.opacity = '0.6';
+                    }
+
+                    // Subtle Card Magnetism (tilt towards touch)
+                    const card = slider.closest('.rounded-lg');
+                    if (card) {
+                        const cardRect = card.getBoundingClientRect();
+                        const centerX = cardRect.left + cardRect.width / 2;
+                        const centerY = cardRect.top + cardRect.height / 2;
+                        const pullX = (touch.clientX - centerX) * 0.05;
+                        const pullY = (touch.clientY - centerY) * 0.05;
+
+                        card.style.transform = `translate(${pullX}px, ${pullY}px) scale(1.02)`;
+                        card.style.borderColor = 'rgba(99, 102, 241, 0.5)';
+                        card.style.boxShadow = '0 0 30px rgba(99, 102, 241, 0.1)';
+                        card.style.zIndex = "30";
+                    }
+                }
+            };
+
+            slider.addEventListener('touchstart', handleTouch);
+            slider.addEventListener('touchmove', handleTouch);
+            slider.addEventListener('touchend', () => {
+                if (aura) aura.style.opacity = '0';
+                const card = slider.closest('.rounded-lg');
+                if (card) {
+                    card.style.transform = '';
+                    card.style.borderColor = '';
+                    card.style.boxShadow = '';
+                    card.style.zIndex = "";
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
